@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const prisma = require('./prismaClient');
 const authRoutes = require('./routes/auth.routes');
+const ticketRoutes = require('./routes/tickets.routes');
 
 const app = express();
 app.use(cors());
@@ -10,6 +11,9 @@ app.use(express.json());
 
 //routes
 app.use('/auth', authRoutes);
+
+//ticket
+app.use('/tickets', ticketRoutes);
 
 //health
 app.get('/health', (req,res) => res.json({ ok: true }));

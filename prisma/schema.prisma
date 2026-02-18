@@ -8,23 +8,27 @@ datasource db {
 }
 
 model Department {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
+  id        String     @id @default(cuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
   users     User[]
+  Category  Category[]
+  Ticket    Ticket[]
 }
 
 model User {
-  id             String    @id @default(cuid())
-  name           String
-  email          String    @unique
-  passwordHash   String
-  role           Role
-  departmentId   String?   // student may not have department
-  department     Department? @relation(fields: [departmentId], references: [id])
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  refreshTokens  RefreshToken[]
+  id              String         @id @default(cuid())
+  name            String
+  email           String         @unique
+  passwordHash    String
+  role            Role
+  departmentId    String?
+  department      Department?    @relation(fields: [departmentId], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  refreshTokens   RefreshToken[]
+  studentTickets  Ticket[]       @relation("studentTickets")
+  assignedTickets Ticket[]       @relation("assigneeTickets")
 }
 
 model RefreshToken {
@@ -41,4 +45,69 @@ enum Role {
   AGENT
   SUPERVISOR
   ADMIN
+}
+
+model Category {
+  id           String      @id @default(cuid())
+  name         String
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime    @default(now())
+  tickets      Ticket[]
+
+  @@unique([name, departmentId])
+}
+
+model Ticket {
+  id          String @id @default(cuid())
+  title       String
+  description String
+
+  studentId String
+  student   User   @relation("studentTickets", fields: [studentId], references: [id])
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  priority Priority     @default(MED)
+  status   TicketStatus @default(OPEN)
+
+  assigneeId String?
+  assignee   User?   @relation("assigneeTickets", fields: [assigneeId], references: [id])
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+
+  attachments Attachment[]
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  url       String
+  filename  String?
+  createdAt DateTime @default(now())
+}
+
+enum Priority {
+  LOW
+  MED
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  NEEDS_INFO
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  CANCELLED
+  REOPENED
 }

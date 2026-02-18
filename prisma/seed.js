@@ -25,6 +25,30 @@ async function main() {
       create: u
     });
   }
+
+  const category = await prisma.category.upsert({
+    where: { name_departmentId: { name: 'Plumbing', departmentId: d1.id } },
+    update: {},
+    create: { name: 'Plumbing', departmentId: d1.id }
+  });
+
+  // example ticket (created by Student Demo)
+  const student = await prisma.user.findUnique({ where: { email: 'student@example.com' }});
+  await prisma.ticket.upsert({
+    where: { id: 'seed-ticket-1' },
+    update: {},
+    create: {
+      id: 'seed-ticket-1',
+      title: 'Leaky sink in room 201',
+      description: 'Water leaking from sink since last night.',
+      studentId: student.id,
+      departmentId: d1.id,
+      categoryId: category.id,
+      priority: 'MED'
+    }
+  });
+
+
   console.log('Seeded.');
 }
 
