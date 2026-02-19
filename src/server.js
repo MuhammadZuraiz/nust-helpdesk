@@ -4,6 +4,10 @@ const cors = require('cors');
 const prisma = require('./prismaClient');
 const authRoutes = require('./routes/auth.routes');
 const ticketRoutes = require('./routes/tickets.routes');
+const statusRoutes = require('./routes/status.routes');
+const commentsRoutes = require('./routes/comments.routes');
+const auditRoutes = require('./routes/audit.routes');
+
 
 const app = express();
 app.use(cors());
@@ -14,6 +18,9 @@ app.use('/auth', authRoutes);
 
 //ticket
 app.use('/tickets', ticketRoutes);
+app.use('/tickets', statusRoutes);        // status endpoints
+app.use('/tickets', commentsRoutes);      // comments & notes
+app.use('/tickets', auditRoutes);         // audit logs
 
 //health
 app.get('/health', (req,res) => res.json({ ok: true }));

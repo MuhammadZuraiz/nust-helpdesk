@@ -11,9 +11,10 @@ model Department {
   id        String     @id @default(cuid())
   name      String     @unique
   createdAt DateTime   @default(now())
-  users     User[]
-  Category  Category[]
-  Ticket    Ticket[]
+
+  users      User[]
+  categories Category[]
+  tickets    Ticket[]
 }
 
 model User {
@@ -22,13 +23,20 @@ model User {
   email           String         @unique
   passwordHash    String
   role            Role
+
   departmentId    String?
   department      Department?    @relation(fields: [departmentId], references: [id])
+
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+
   refreshTokens   RefreshToken[]
+
   studentTickets  Ticket[]       @relation("studentTickets")
   assignedTickets Ticket[]       @relation("assigneeTickets")
+
+  comments        Comment[]
+  auditLogs       AuditLog[]
 }
 
 model RefreshToken {
@@ -53,6 +61,7 @@ model Category {
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id])
   createdAt    DateTime    @default(now())
+
   tickets      Ticket[]
 
   @@unique([name, departmentId])
@@ -63,20 +72,20 @@ model Ticket {
   title       String
   description String
 
-  studentId String
-  student   User   @relation("studentTickets", fields: [studentId], references: [id])
+  studentId   String
+  student     User   @relation("studentTickets", fields: [studentId], references: [id])
 
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id])
 
-  categoryId String?
-  category   Category? @relation(fields: [categoryId], references: [id])
+  categoryId   String?
+  category     Category? @relation(fields: [categoryId], references: [id])
 
-  priority Priority     @default(MED)
-  status   TicketStatus @default(OPEN)
+  priority     Priority     @default(MED)
+  status       TicketStatus @default(OPEN)
 
-  assigneeId String?
-  assignee   User?   @relation("assigneeTickets", fields: [assigneeId], references: [id])
+  assigneeId   String?
+  assignee     User?   @relation("assigneeTickets", fields: [assigneeId], references: [id])
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -84,6 +93,8 @@ model Ticket {
   resolvedAt      DateTime?
 
   attachments Attachment[]
+  comments    Comment[]
+  auditLogs   AuditLog[]
 }
 
 model Attachment {
@@ -92,6 +103,37 @@ model Attachment {
   ticket    Ticket   @relation(fields: [ticketId], references: [id])
   url       String
   filename  String?
+  createdAt DateTime @default(now())
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  ticketId   String
+  ticket     Ticket   @relation(fields: [ticketId], references: [id])
+
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+
+  content    String
+  isInternal Boolean  @default(false)
+
+  createdAt  DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+
+  ticketId  String?
+  ticket    Ticket?  @relation(fields: [ticketId], references: [id])
+
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+
+  action    String
+  oldValue  String?
+  newValue  String?
+  meta      Json?
+
   createdAt DateTime @default(now())
 }
 
