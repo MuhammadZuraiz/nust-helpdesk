@@ -92,6 +92,14 @@ model Ticket {
   firstResponseAt DateTime?
   resolvedAt      DateTime?
 
+  // SLA fields
+  responseDueAt    DateTime?
+  resolveDueAt     DateTime?
+  responseBreachAt DateTime?
+  resolveBreachAt  DateTime?
+  isResponseBreached Boolean @default(false)
+  isResolveBreached  Boolean @default(false)
+
   attachments Attachment[]
   comments    Comment[]
   auditLogs   AuditLog[]
@@ -135,6 +143,15 @@ model AuditLog {
   meta      Json?
 
   createdAt DateTime @default(now())
+}
+
+model SlaPolicy {
+  id               String  @id @default(cuid())
+  name             String  @unique
+  priority         Priority
+  responseMinutes  Int     // minutes allowed for first response
+  resolveMinutes   Int     // minutes allowed for resolution
+  createdAt        DateTime @default(now())
 }
 
 enum Priority {

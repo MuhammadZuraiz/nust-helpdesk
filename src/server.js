@@ -7,6 +7,9 @@ const ticketRoutes = require('./routes/tickets.routes');
 const statusRoutes = require('./routes/status.routes');
 const commentsRoutes = require('./routes/comments.routes');
 const auditRoutes = require('./routes/audit.routes');
+const jobsRoutes = require('./routes/jobs.routes');
+const cron = require('node-cron');
+const { runSlaChecks } = require('./services/sla.service');
 
 
 const app = express();
@@ -22,6 +25,9 @@ app.use('/tickets', statusRoutes);        // status endpoints
 app.use('/tickets', commentsRoutes);      // comments & notes
 app.use('/tickets', auditRoutes);         // audit logs
 
+//jobs
+app.use('/jobs', jobsRoutes);
+
 //health
 app.get('/health', (req,res) => res.json({ ok: true }));
 
@@ -33,6 +39,20 @@ app.use((err, req, res, next) => {
   }
   res.status(400).json({ error: err.message || 'Bad request' });
 });
+
+//run sla check every 5 minutes
+
+// cron.schedule('*/5 * * * *', async () => {
+/*  try {
+    const res = await runSlaChecks({ escalate: true });
+    if (res.responseBreaches.length || res.resolveBreaches.length) {
+      console.log('SLA check results:', res);
+    }
+  } catch (e) {
+    console.error('SLA cron error', e);
+  }
+});
+*/
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
