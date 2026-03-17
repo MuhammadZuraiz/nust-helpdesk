@@ -7,7 +7,7 @@ const commentsCtrl = require('../controllers/comments.controller');
 // Public comment (student & staff)
 router.post('/:id/comments', authMiddleware, commentsCtrl.addPublicComment);
 
-// Internal notes (staff only)
+//internal notes only staff only)
 router.post('/:id/notes', authMiddleware, roleMiddleware(['AGENT','SUPERVISOR','ADMIN']), commentsCtrl.addInternalNote);
 
 module.exports = router;

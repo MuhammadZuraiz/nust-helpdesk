@@ -1,15 +1,14 @@
 const prisma = require('../prismaClient');
+const AppError = require('../utils/AppError');
 
-// GET /tickets/:id/audit (staff only)
+//used for GET /tickets/:id/audit
 async function getAuditForTicket(req, res, next) {
   try {
-    const ticketId = req.params.id;
-
-    // Basic permission: students cannot access audit; staff allowed
     if (req.user.role === 'STUDENT') {
-      return res.status(403).json({ error: 'Forbidden' });
+      throw new AppError('Forbidden', 403);
     }
 
+    const ticketId = req.params.id;
     const logs = await prisma.auditLog.findMany({
       where: { ticketId },
       include: { actor: { select: { id: true, name: true, email: true, role: true } } },

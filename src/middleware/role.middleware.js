@@ -1,4 +1,3 @@
-// usage: roleMiddleware(['ADMIN', 'SUPERVISOR'])
 function roleMiddleware(allowedRoles = []) {
   return function (req, res, next) {
     const user = req.user;

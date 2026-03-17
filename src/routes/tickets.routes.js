@@ -4,19 +4,10 @@ const ticketCtrl = require('../controllers/tickets.controller');
 const authMiddleware = require('../middleware/auth.middleware');
 const roleMiddleware = require('../middleware/role.middleware');
 
-//student creates ticket
 router.post('/', authMiddleware, ticketCtrl.createTicket);
-
-//student listing their tickets
 router.get('/my', authMiddleware, ticketCtrl.myTickets);
-
-//ticket details
+router.get('/queue', authMiddleware, roleMiddleware(['AGENT', 'SUPERVISOR', 'ADMIN']), ticketCtrl.queue);
 router.get('/:id', authMiddleware, ticketCtrl.getTicket);
-
-//staff only
-router.get('/queue', authMiddleware, roleMiddleware(['AGENT','SUPERVISOR','ADMIN']), ticketCtrl.queue);
-
-//only supervisor/admin
-router.patch('/:id/assign', authMiddleware, roleMiddleware(['SUPERVISOR','ADMIN']), ticketCtrl.assign);
+router.patch('/:id/assign', authMiddleware, roleMiddleware(['SUPERVISOR', 'ADMIN']), ticketCtrl.assign);
 
 module.exports = router;

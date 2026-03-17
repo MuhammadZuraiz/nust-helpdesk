@@ -1,10 +1,11 @@
 const prisma = require('../prismaClient');
 const { createAudit } = require('./audit.service');
+const AppError = require('../utils/AppError');
 
 async function addComment({ ticketId, authorId, content, isInternal = false }) {
   //we make sure the ticket exists
   const ticket = await prisma.ticket.findUnique({ where: { id: ticketId }});
-  if (!ticket) throw new Error('Ticket not found');
+  if (!ticket) throw new AppError('Ticket not found', 404);
 
   const comment = await prisma.comment.create({
     data: {
