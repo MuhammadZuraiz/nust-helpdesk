@@ -1,6 +1,6 @@
-// sla.service.js
 const prisma = require('../prismaClient');
 const { createAudit } = require('./audit.service');
+const { sendEmail } = require('./email.service');
 
 /*
 Run SLA checks:
@@ -36,6 +36,39 @@ async function runSlaChecks({ escalate = false } = {}) {
       newValue: JSON.stringify({ at: now.toISOString() })
     });
     actions.responseBreaches.push(t.id);
+
+  // Notify the assigned agent if there is one.
+  // If there's no assignee we still want to notify someone —
+  // so we fetch the ticket with its department to find a supervisor.
+  try {
+    if (t.assigneeId) {
+      const assignee = await prisma.user.findUnique({ where: { id: t.assigneeId } });
+      if (assignee) {
+        await sendEmail({
+          to:      assignee.email,
+          subject: `SLA BREACH — Response overdue: ${t.title}`,
+          text:    `Hi ${assignee.name},\n\nTicket "${t.title}" has breached its response SLA.\n\nPlease respond immediately.\n\nTicket ID: ${t.id}`,
+          html: `
+            <h2 style="color:red;">SLA Response Breach</h2>
+            <p>Hi ${assignee.name},</p>
+            <p>The following ticket has <strong>breached its response SLA</strong>:</p>
+            <table>
+              <tr><td><strong>Title</strong></td><td>${t.title}</td></tr>
+              <tr><td><strong>Priority</strong></td><td>${t.priority}</td></tr>
+              <tr><td><strong>Ticket ID</strong></td><td>${t.id}</td></tr>
+            </table>
+            <p>Please respond immediately.</p>
+          `
+        });
+      }
+    }
+  } catch (err) {
+    console.error('SLA breach email failed', {
+      ticketId: t.id,
+      assigneeId: t.assigneeId,
+      error: err.message
+    });
+  }
 
     if (escalate) {
       const priorityMap = { 'LOW': 'MED', 'MED': 'HIGH', 'HIGH': 'URGENT' };

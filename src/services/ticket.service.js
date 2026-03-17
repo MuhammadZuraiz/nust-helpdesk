@@ -1,6 +1,7 @@
 const prisma = require('../prismaClient');
 const { createAudit } = require('./audit.service');
 const AppError = require('../utils/AppError');
+const { sendEmail } = require('./email.service');
 
 function addMinutes(date, mins) {
   return new Date(date.getTime() + mins * 60 * 1000);
@@ -238,6 +239,31 @@ async function assignTicket({ ticketId, assigneeId, actor }) {
       newValue: assigneeId
     }
   });
+
+  // Send notification email to the assigned agent.
+  // We wrap this in try/catch so an email failure never fails the assignment itself — the ticket is already updated in the database at this point.
+  try {
+    await sendEmail({
+      to:      assignee.email,
+      subject: `Ticket assigned to you: ${ticket.title}`,
+      text:    `Hi ${assignee.name},\n\nTicket "${ticket.title}" has been assigned to you.\n\nTicket ID: ${ticketId}`,
+      html:    `
+        <h2>Ticket Assigned</h2>
+        <p>Hi ${assignee.name},</p>
+        <p>The following ticket has been assigned to you:</p>
+        <table>
+          <tr><td><strong>Title</strong></td><td>${ticket.title}</td></tr>
+          <tr><td><strong>Priority</strong></td><td>${ticket.priority}</td></tr>
+          <tr><td><strong>Ticket ID</strong></td><td>${ticketId}</td></tr>
+        </table>
+        <p>Please log in to the helpdesk to view and respond.</p>
+      `
+    });
+  } catch (err) {
+    // Log but don't rethrow — assignment already succeeded.
+    console.error('Assignment email failed, but ticket was assigned:', err.message);
+  }
+
 
   return updated;
 }
