@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Department {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+
+  users      User[]
+  categories Category[]
+  tickets    Ticket[]
+}
+
+model User {
+  id              String         @id @default(cuid())
+  name            String
+  email           String         @unique
+  passwordHash    String
+  role            Role
+
+  departmentId    String?
+  department      Department?    @relation(fields: [departmentId], references: [id])
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  refreshTokens   RefreshToken[]
+
+  studentTickets  Ticket[]       @relation("studentTickets")
+  assignedTickets Ticket[]       @relation("assigneeTickets")
+
+  comments        Comment[]
+  auditLogs       AuditLog[]
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  revoked   Boolean  @default(false)
+}
+
+enum Role {
+  STUDENT
+  AGENT
+  SUPERVISOR
+  ADMIN
+}
+
+model Category {
+  id           String      @id @default(cuid())
+  name         String
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime    @default(now())
+
+  tickets      Ticket[]
+
+  @@unique([name, departmentId])
+}
+
+model Ticket {
+  id          String @id @default(cuid())
+  title       String
+  description String
+
+  studentId   String
+  student     User   @relation("studentTickets", fields: [studentId], references: [id])
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  categoryId   String?
+  category     Category? @relation(fields: [categoryId], references: [id])
+
+  priority     Priority     @default(MED)
+  status       TicketStatus @default(OPEN)
+
+  assigneeId   String?
+  assignee     User?   @relation("assigneeTickets", fields: [assigneeId], references: [id])
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+
+  // SLA fields
+  responseDueAt    DateTime?
+  resolveDueAt     DateTime?
+  responseBreachAt DateTime?
+  resolveBreachAt  DateTime?
+  isResponseBreached Boolean @default(false)
+  isResolveBreached  Boolean @default(false)
+
+  attachments Attachment[]
+  comments    Comment[]
+  auditLogs   AuditLog[]
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  url       String
+  filename  String?
+  createdAt DateTime @default(now())
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  ticketId   String
+  ticket     Ticket   @relation(fields: [ticketId], references: [id])
+
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+
+  content    String
+  isInternal Boolean  @default(false)
+
+  createdAt  DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+
+  ticketId  String?
+  ticket    Ticket?  @relation(fields: [ticketId], references: [id])
+
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+
+  action    String
+  oldValue  String?
+  newValue  String?
+  meta      Json?
+
+  createdAt DateTime @default(now())
+}
+
+model SlaPolicy {
+  id               String  @id @default(cuid())
+  name             String  @unique
+  priority         Priority
+  responseMinutes  Int     // minutes allowed for first response
+  resolveMinutes   Int     // minutes allowed for resolution
+  createdAt        DateTime @default(now())
+}
+
+enum Priority {
+  LOW
+  MED
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  NEEDS_INFO
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  CANCELLED
+  REOPENED
+}
