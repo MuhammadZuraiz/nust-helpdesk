@@ -25,6 +25,9 @@ function AgentQueuePage() {
   const [sortBy, setSortBy]             = useState('createdAt');
   const [page, setPage]                 = useState(1);
 
+  const [search, setSearch]            = useState('');
+  const [searchInput, setSearchInput]  = useState('');
+
   const navigate = useNavigate();
   const LIMIT = 20;
 
@@ -38,7 +41,8 @@ function AgentQueuePage() {
           limit: LIMIT,
           sortBy,
           sortOrder: sortBy === 'priority' ? 'asc' : 'desc',
-          ...(statusFilter !== 'ALL' && { status: statusFilter })
+          ...(statusFilter !== 'ALL' && { status: statusFilter }),
+          ...(search.trim() && { search: search.trim() }),
         };
         const data = await getQueue(params);
         setTickets(data.tickets);
@@ -50,7 +54,20 @@ function AgentQueuePage() {
       }
     }
     fetchQueue();
-  }, [statusFilter, sortBy, page]);
+  }, [statusFilter, sortBy, page, search]);
+
+  // Wait 400ms after the user stops typing before updating search
+  // This prevents firing an API call on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1); // reset to page 1 on new search
+    }, 400);
+
+    // Cleanup — if the user types again before 400ms,
+    // cancel the previous timer and start a new one
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // When a filter changes, reset to page 1
   function handleStatusChange(status) {
@@ -72,6 +89,28 @@ function AgentQueuePage() {
         <div>
           <h2 className="text-xl font-semibold text-gray-800">Ticket Queue</h2>
           <p className="text-sm text-gray-400 mt-1">{total} tickets</p>
+        </div>
+
+        {/* Search bar */}
+        <div className="relative mb-4">
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search tickets by title or description..."
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {/* Search icon */}
+          <span className="absolute right-3 top-2.5 text-gray-400 text-sm">🔍</span>
+          {/* Clear button — only shows when there is input */}
+          {searchInput && (
+            <button
+              onClick={() => { setSearchInput(''); setSearch(''); }}
+              className="absolute right-8 top-2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+            >
+              ×
+            </button>
+          )}
         </div>
 
         {/* Sort control */}
@@ -119,10 +158,23 @@ function AgentQueuePage() {
 
       {/* Empty state */}
       {!loading && !error && tickets.length === 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-          <p className="text-gray-400">No tickets found for this filter.</p>
-        </div>
-      )}
+      <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+        <p className="text-gray-400">
+          {search
+            ? `No tickets found for "${search}"`
+            : 'No tickets found for this filter.'
+          }
+        </p>
+        {search && (
+          <button
+            onClick={() => { setSearchInput(''); setSearch(''); }}
+            className="mt-3 text-sm text-blue-600 hover:underline"
+          >
+            Clear search
+          </button>
+        )}
+      </div>
+    )}
 
       {/* Ticket list */}
       {!loading && (

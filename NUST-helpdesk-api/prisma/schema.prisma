@@ -37,6 +37,8 @@ model User {
 
   comments        Comment[]
   auditLogs       AuditLog[]
+
+  notifications Notification[]
 }
 
 model RefreshToken {
@@ -103,6 +105,8 @@ model Ticket {
   attachments Attachment[]
   comments    Comment[]
   auditLogs   AuditLog[]
+
+  notifications Notification[]
 }
 
 model Attachment {
@@ -169,4 +173,16 @@ enum TicketStatus {
   CLOSED
   CANCELLED
   REOPENED
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  ticketId  String?
+  ticket    Ticket?  @relation(fields: [ticketId], references: [id])
+  type      String   // e.g. 'TICKET_ASSIGNED', 'STATUS_CHANGED', 'COMMENT_ADDED', 'SLA_BREACHED'
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

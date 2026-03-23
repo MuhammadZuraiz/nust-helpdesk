@@ -18,9 +18,16 @@ async function request(path, options = {}) {
     // If we get a 401, the token has expired.
     // Clear storage and redirect to login automatically.
     if (response.status === 401) {
-      localStorage.clear();
-      window.location.href = '/';
-      return; // stop execution
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        // User was logged in but token expired — clear and redirect
+        localStorage.clear();
+        window.location.href = '/';
+        return;
+      }
+      // User is not logged in — this is a credentials error.
+      // Fall through and throw a normal error so the login
+      // form can display it as a message instead of redirecting.
     }
 
     const message = Array.isArray(data.error)
