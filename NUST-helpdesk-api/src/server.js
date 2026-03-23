@@ -12,6 +12,7 @@ const cron = require('node-cron');
 const { runSlaChecks } = require('./services/sla.service');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const usersRoutes = require('./routes/users.routes');
+const notificationsRoutes = require('./routes/notifications.routes');
 
 const app = express();
 app.use(cors());
@@ -30,6 +31,9 @@ app.use('/users', usersRoutes);
 
 // Health
 app.get('/health', (req, res) => res.json({ ok: true }));
+
+// Notis
+app.use('/notifications', notificationsRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {

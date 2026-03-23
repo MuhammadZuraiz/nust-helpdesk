@@ -1,6 +1,7 @@
 const prisma = require('../prismaClient');
 const { createAudit } = require('./audit.service');
 const AppError = require('../utils/AppError');
+const { createNotification } = require('./notification.service');
 
 const ALLOWED_TRANSITIONS = {
   OPEN: ['IN_PROGRESS','NEEDS_INFO','CANCELLED'],
@@ -126,6 +127,28 @@ async function changeTicketStatus({ ticketId, actor, newStatus, reason = null })
     newValue: newStatus,
     meta: reason ? { reason } : null
   });
+
+  // Notify the student their ticket status changed
+  // but only if the actor is not the student themselves
+  if (actor.id !== ticket.studentId) {
+    await createNotification({
+      userId:   ticket.studentId,
+      ticketId: ticketId,
+      type:     'STATUS_CHANGED',
+      message:  `Your ticket "${ticket.title}" status changed from ${oldValue} to ${newStatus}.`
+    });
+  }
+
+  // If reopened or moved to IN_PROGRESS, notify the assignee too
+  if (ticket.assigneeId && ticket.assigneeId !== actor.id &&
+      ['IN_PROGRESS', 'REOPENED'].includes(newStatus)) {
+    await createNotification({
+      userId:   ticket.assigneeId,
+      ticketId: ticketId,
+      type:     'STATUS_CHANGED',
+      message:  `Ticket "${ticket.title}" has been updated to ${newStatus}.`
+    });
+  }
 
   return updated;
 }

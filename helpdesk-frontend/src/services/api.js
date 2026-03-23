@@ -73,5 +73,9 @@ export const getAuditLog   = (id)       => request(`/tickets/${id}/audit`);
 // ── Jobs ─────────────────────────────────────────────────────────────────────
 export const runSlaCheck   = ()         => request('/jobs/run-sla-check', { method: 'POST' });
 
+// ── Notifications ────────────────────────────────────────────────────────────
+export const getNotifications   = () => request('/notifications');
+export const markNotificationsRead = () => request('/notifications/read', { method: 'PATCH' });
+
 export const getAgents = () => request('/users/agents');
 export const getStats = () => request('/users/stats');

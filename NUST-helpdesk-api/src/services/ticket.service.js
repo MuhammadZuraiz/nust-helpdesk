@@ -2,6 +2,7 @@ const prisma = require('../prismaClient');
 const { createAudit } = require('./audit.service');
 const AppError = require('../utils/AppError');
 const { sendEmail } = require('./email.service');
+const { createNotification } = require('./notification.service');
 
 function addMinutes(date, mins) {
   return new Date(date.getTime() + mins * 60 * 1000);
@@ -12,14 +13,9 @@ async function getSlaPolicyForPriority(priority) {
   return policy || null;
 }
 
-async function createTicket({
-  title,
-  description,
-  departmentId = null,
-  categoryId = null,
-  priority = 'MED',
-  studentId
-}) {
+async function createTicket({ title, description, departmentId = null,
+  categoryId = null, priority = 'MED', studentId }) {
+
   const now = new Date();
   const policy = await getSlaPolicyForPriority(priority);
 
@@ -101,11 +97,8 @@ async function getTicketById({ id, user }) {
     throw new AppError('Forbidden', 403);
   }
 
-  if (
-    (user.role === 'AGENT' || user.role === 'SUPERVISOR') &&
-    user.departmentId &&
-    ticket.departmentId !== user.departmentId
-  ) {
+  if ((user.role === 'AGENT' || user.role === 'SUPERVISOR') && user.departmentId &&
+    ticket.departmentId !== user.departmentId) {
     throw new AppError('Forbidden', 403);
   }
 
@@ -238,6 +231,22 @@ async function assignTicket({ ticketId, assigneeId, actor }) {
       oldValue: ticket.assigneeId || null,
       newValue: assigneeId
     }
+  });
+
+  // Notify the assigned agent
+  await createNotification({
+    userId:   assigneeId,
+    ticketId: ticketId,
+    type:     'TICKET_ASSIGNED',
+    message:  `Ticket "${ticket.title}" has been assigned to you.`
+  });
+
+  // Notify the student their ticket was assigned
+  await createNotification({
+    userId:   ticket.studentId,
+    ticketId: ticketId,
+    type:     'TICKET_ASSIGNED',
+    message:  `Your ticket "${ticket.title}" has been assigned to an agent.`
   });
 
   // Send notification email to the assigned agent.

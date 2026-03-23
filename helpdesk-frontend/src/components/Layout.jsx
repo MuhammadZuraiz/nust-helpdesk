@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../services/api';
+import NotificationBell from './NotificationBell';
 
 function Layout({ children }) {
   const navigate = useNavigate();
@@ -37,13 +38,15 @@ function Layout({ children }) {
         >
           NUST Helpdesk
         </button>
-
         <div className="flex items-center gap-4">
-          {/* Role badge */}
           <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
             {user.role}
           </span>
           <span className="text-sm text-gray-500">{user.name}</span>
+
+          {/* Bell — add this */}
+          <NotificationBell />
+
           <button
             onClick={handleLogout}
             className="text-sm text-red-500 hover:text-red-700"
